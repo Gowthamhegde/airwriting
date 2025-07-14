@@ -1,0 +1,10 @@
+opencv-python
+mediapipe
+numpy
+textblob
+pyttsx3
+tensorflow
+keras
+streamlit
+pillow
+tensorflow-datasets
