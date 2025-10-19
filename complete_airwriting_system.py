@@ -310,15 +310,17 @@ class LetterRecognizer:
         print(f"🧠 Letter recognizer initialized (Model: {self.model_available})")
 
     def load_model(self, model_path=None):
-        """Load trained model"""
+        """Load trained model with enhanced error handling"""
         model_paths = []
 
         # If custom path provided, try it first
         if model_path and os.path.exists(model_path):
             model_paths.append(model_path)
 
-        # Default paths
+        # Enhanced default paths (prioritize ultra-optimized models)
         default_paths = [
+            "models/letter_recognition_ultra_optimized.h5",
+            "models/ultra_optimized_letter_recognition.h5",
             "models/letter_recognition_advanced.h5",
             "models/advanced_letter_recognition.h5",
             "models/letter_recognition_enhanced.h5",
@@ -329,12 +331,28 @@ class LetterRecognizer:
         for path in model_paths:
             if os.path.exists(path):
                 try:
-                    self.model = load_model(path)
+                    # Load model with custom objects if needed
+                    self.model = load_model(path, compile=False)
+                    
+                    # Recompile for inference
+                    self.model.compile(
+                        optimizer='adam',
+                        loss='categorical_crossentropy',
+                        metrics=['accuracy']
+                    )
+                    
                     self.model_available = True
                     print(f"✅ Loaded model: {path}")
+                    
+                    # Test model with a dummy input
+                    test_input = np.zeros((1, 28, 28, 1))
+                    _ = self.model.predict(test_input, verbose=0)
+                    print(f"✅ Model validation successful")
                     return
+                    
                 except Exception as e:
                     print(f"⚠️  Failed to load {path}: {e}")
+                    continue
 
         print("⚠️  No trained model found - using demo mode")
     
@@ -381,60 +399,127 @@ class LetterRecognizer:
         return letter, confidence
 
 class WordCorrector:
-    """Word correction with multiple strategies"""
+    """Enhanced word correction with ultra-optimized dictionary and advanced algorithms"""
     
     def __init__(self):
-        self.target_words = [
-            'CAT', 'DOG', 'BAT', 'RAT', 'HAT', 'MAT', 'SAT', 'FAT',
-            'BIG', 'PIG', 'DIG', 'FIG', 'WIG', 'JIG',
-            'SUN', 'RUN', 'FUN', 'GUN', 'BUN', 'NUN',
-            'BOX', 'FOX', 'COX', 'SOX',
-            'BED', 'RED', 'LED', 'FED',
-            'TOP', 'HOP', 'MOP', 'POP', 'COP',
-            'CUP', 'PUP', 'SUP',
-            'BAG', 'TAG', 'RAG', 'SAG', 'WAG',
-            'BUS', 'YES', 'NET', 'PET', 'SET', 'WET', 'GET', 'LET', 'MET',
-            'HOT', 'POT', 'COT', 'DOT', 'GOT', 'LOT', 'NOT', 'ROT',
-            'BAD', 'DAD', 'HAD', 'MAD', 'PAD', 'SAD',
-            'BEE', 'SEE', 'TEE', 'FEE',
-            'EGG', 'LEG', 'BEG', 'PEG',
-            'ICE', 'NICE', 'RICE', 'MICE'
-        ]
+        # Load ultra-optimized dictionary if available
+        self.dictionary_data = self.load_ultra_dictionary()
+        
+        if self.dictionary_data:
+            self.target_words = self.dictionary_data['target_words']
+            self.letter_frequencies = self.dictionary_data['letter_frequencies']
+            self.letter_patterns = self.dictionary_data.get('letter_patterns', {})
+            print(f"📚 Loaded ultra-optimized dictionary with {len(self.target_words)} words")
+        else:
+            # Fallback to basic word list
+            self.target_words = [
+                'CAT', 'DOG', 'BAT', 'RAT', 'HAT', 'MAT', 'SAT', 'FAT', 'PAT',
+                'BIG', 'PIG', 'DIG', 'FIG', 'WIG', 'JIG', 'RIG',
+                'SUN', 'RUN', 'FUN', 'GUN', 'BUN', 'NUN',
+                'BOX', 'FOX', 'COX', 'SOX',
+                'BED', 'RED', 'LED', 'FED', 'WED',
+                'TOP', 'HOP', 'MOP', 'POP', 'COP', 'SOP',
+                'CUP', 'PUP', 'SUP', 'YUP',
+                'BAG', 'TAG', 'RAG', 'SAG', 'WAG', 'NAG',
+                'BUS', 'HUS', 'MUS',
+                'HOT', 'POT', 'COT', 'DOT', 'GOT', 'LOT', 'NOT', 'ROT',
+                'BAD', 'DAD', 'HAD', 'MAD', 'PAD', 'SAD', 'FAD',
+                'BEE', 'SEE', 'TEE', 'FEE', 'PEE',
+                'EGG', 'LEG', 'BEG', 'PEG',
+                'ICE', 'NICE', 'RICE', 'MICE', 'VICE', 'DICE',
+                'ANT', 'PAN', 'MAN', 'CAN', 'FAN', 'VAN',
+                'CAR', 'FAR', 'JAR', 'BAR', 'TAR',
+                'DAY', 'BAY', 'HAY', 'JAY', 'LAY', 'MAY', 'PAY', 'RAY', 'SAY', 'WAY',
+                'EYE', 'DYE', 'RYE'
+            ]
+            self.letter_frequencies = {}
+            self.letter_patterns = {}
+            print(f"📚 Using fallback dictionary with {len(self.target_words)} words")
         
         self.word_set = set(self.target_words)
-        print(f"📚 Word corrector initialized with {len(self.target_words)} words")
+        
+        # Create word length groups for faster matching
+        self.words_by_length = {}
+        for word in self.target_words:
+            length = len(word)
+            if length not in self.words_by_length:
+                self.words_by_length[length] = []
+            self.words_by_length[length].append(word)
+    
+    def load_ultra_dictionary(self):
+        """Load ultra-optimized dictionary if available"""
+        try:
+            import json
+            dict_path = "models/ultra_optimized_word_dictionary.json"
+            if os.path.exists(dict_path):
+                with open(dict_path, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"⚠️  Could not load ultra dictionary: {e}")
+        return None
     
     def correct_word(self, word):
-        """Correct word using multiple strategies including Levenshtein distance"""
+        """Enhanced word correction using multiple advanced strategies"""
         if not word:
             return ""
 
         word = word.upper().strip()
 
-        # Direct match
+        # Direct match - highest priority
         if word in self.word_set:
             return word
 
-        # Find best match by character similarity
+        # Length-based optimization - only check words of similar length
+        word_length = len(word)
+        candidate_words = []
+        
+        # Check exact length and ±1 length
+        for length in range(max(1, word_length - 1), word_length + 2):
+            if length in self.words_by_length:
+                candidate_words.extend(self.words_by_length[length])
+        
+        if not candidate_words:
+            candidate_words = self.target_words
+
+        # Multi-strategy scoring
         best_match = word
         best_score = 0
-
-        for target_word in self.target_words:
+        
+        for target_word in candidate_words:
+            # Calculate multiple similarity scores
+            char_score = self._character_similarity(word, target_word)
+            position_score = self._positional_similarity(word, target_word)
+            levenshtein_score = self._levenshtein_similarity(word, target_word)
+            
+            # Weighted combination of scores
+            combined_score = (
+                char_score * 0.4 +
+                position_score * 0.3 +
+                levenshtein_score * 0.3
+            )
+            
+            # Bonus for exact length match
             if len(target_word) == len(word):
-                # Character-by-character matching
-                matches = sum(1 for a, b in zip(word, target_word) if a == b)
-                score = matches / len(word)
+                combined_score *= 1.2
+            
+            # Bonus for common starting letters
+            if word and target_word and word[0] == target_word[0]:
+                combined_score *= 1.1
+            
+            if combined_score > best_score:
+                best_score = combined_score
+                best_match = target_word
 
-                if score > best_score and score >= 0.5:  # At least 50% match
-                    best_score = score
-                    best_match = target_word
+        # Use pattern-based correction if available
+        if self.letter_patterns and best_score < 0.6:
+            pattern_match = self._pattern_based_correction(word)
+            if pattern_match:
+                pattern_score = self._character_similarity(word, pattern_match)
+                if pattern_score > best_score:
+                    best_match = pattern_match
 
-        # Levenshtein distance for better correction
-        if best_score < 0.7:
-            best_match = self._levenshtein_correct(word)
-
-        # Try TextBlob if available and still no good match
-        if TEXTBLOB_AVAILABLE and best_score < 0.7:
+        # Try TextBlob as final fallback
+        if TEXTBLOB_AVAILABLE and best_score < 0.5:
             try:
                 blob = TextBlob(word.lower())
                 corrected = str(blob.correct()).upper()
@@ -444,6 +529,65 @@ class WordCorrector:
                 pass
 
         return best_match
+    
+    def _character_similarity(self, word1, word2):
+        """Calculate character-based similarity"""
+        if not word1 or not word2:
+            return 0.0
+        
+        matches = sum(1 for a, b in zip(word1, word2) if a == b)
+        max_length = max(len(word1), len(word2))
+        return matches / max_length if max_length > 0 else 0.0
+    
+    def _positional_similarity(self, word1, word2):
+        """Calculate position-weighted similarity"""
+        if not word1 or not word2:
+            return 0.0
+        
+        score = 0.0
+        max_length = max(len(word1), len(word2))
+        
+        for i in range(max_length):
+            if i < len(word1) and i < len(word2):
+                if word1[i] == word2[i]:
+                    # Higher weight for earlier positions
+                    weight = 1.0 - (i * 0.1)
+                    score += weight
+        
+        return score / max_length if max_length > 0 else 0.0
+    
+    def _levenshtein_similarity(self, word1, word2):
+        """Calculate Levenshtein-based similarity (0-1 scale)"""
+        distance = self._levenshtein_distance(word1, word2)
+        max_length = max(len(word1), len(word2))
+        return 1.0 - (distance / max_length) if max_length > 0 else 0.0
+    
+    def _pattern_based_correction(self, word):
+        """Use letter patterns for correction"""
+        if not self.letter_patterns or len(word) == 0:
+            return None
+        
+        # Find words that match the pattern of the input
+        candidates = []
+        
+        for target_word in self.target_words:
+            if len(target_word) == len(word):
+                pattern_score = 0
+                for i, letter in enumerate(word):
+                    if str(i) in self.letter_patterns:
+                        pattern_freq = self.letter_patterns[str(i)]
+                        if letter in pattern_freq and i < len(target_word):
+                            if target_word[i] == letter:
+                                pattern_score += pattern_freq[letter]
+                
+                if pattern_score > 0:
+                    candidates.append((target_word, pattern_score))
+        
+        if candidates:
+            # Return the word with highest pattern score
+            return max(candidates, key=lambda x: x[1])[0]
+        
+        return None
 
     def _levenshtein_correct(self, word):
         """Correct word using Levenshtein distance"""
@@ -520,7 +664,7 @@ class TextToSpeech:
             print(f"🔊 Would speak: {text}")
 
 class CompleteAirWritingSystem:
-    """Complete integrated air writing system"""
+    """Complete integrated air writing system optimized for real-time performance"""
     
     def __init__(self, model_path=None):
         print("🚀 Initializing Complete Air Writing System...")
@@ -531,38 +675,53 @@ class CompleteAirWritingSystem:
         self.word_corrector = WordCorrector()
         self.tts = TextToSpeech()
         
-        # Initialize camera
+        # Initialize camera with optimized settings
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             raise Exception("Could not open camera")
         
-        # Set camera properties
+        # Optimized camera properties for real-time performance
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.cap.set(cv2.CAP_PROP_FPS, 30)
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer for real-time
         
         # Application state
         self.current_word = ""
         self.recognized_words = []
         self.current_path = []
+        self.letter_candidates = []  # Store multiple letter candidates
         
-        # Timing parameters
-        self.LETTER_PAUSE_FRAMES = 25
-        self.WORD_PAUSE_FRAMES = 75
-        self.MIN_PATH_LENGTH = 10
-        self.CONFIDENCE_THRESHOLD = 0.3
+        # Enhanced timing parameters for better accuracy
+        self.LETTER_PAUSE_FRAMES = 20  # Reduced for faster response
+        self.WORD_PAUSE_FRAMES = 60   # Reduced for faster word completion
+        self.MIN_PATH_LENGTH = 8      # Reduced minimum path length
+        self.CONFIDENCE_THRESHOLD = 0.25  # Lowered for better detection
+        self.MAX_PATH_LENGTH = 300    # Prevent memory issues
         
         # State counters
         self.letter_pause_count = 0
         self.word_pause_count = 0
         self.last_movement_time = time.time()
+        self.last_letter_time = time.time()
         
         # Performance tracking
         self.fps = 0
         self.frame_count = 0
         self.fps_start_time = time.time()
+        self.processing_times = deque(maxlen=30)
         
-        print("✅ Complete Air Writing System initialized")
+        # Real-time optimization flags
+        self.show_trail = True
+        self.show_debug = True
+        self.auto_word_completion = True
+        self.letter_smoothing = True
+        
+        # Enhanced word prediction
+        self.partial_word_predictions = []
+        self.word_confidence_history = deque(maxlen=5)
+        
+        print("✅ Complete Air Writing System initialized with real-time optimizations")
         self.print_instructions()
     
     def print_instructions(self):
@@ -595,130 +754,229 @@ class CompleteAirWritingSystem:
             self.fps_start_time = time.time()
     
     def draw_ui(self, frame):
-        """Draw user interface"""
+        """Enhanced user interface with real-time feedback"""
         h, w = frame.shape[:2]
         
-        # Main display area
+        # Main display area with transparency
         overlay = frame.copy()
-        cv2.rectangle(overlay, (10, 10), (w-10, 160), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.8, frame, 0.2, 0, frame)
+        cv2.rectangle(overlay, (10, 10), (w-10, 180), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
         
-        # Current word
+        # Current word with enhanced styling
         word_text = f"Word: {self.current_word}"
-        cv2.putText(frame, word_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 3)
+        word_color = (0, 255, 255) if self.current_word else (128, 128, 128)
+        cv2.putText(frame, word_text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, word_color, 3)
         
-        # Word suggestions
+        # Real-time word predictions
+        if self.partial_word_predictions:
+            prediction_text = f"Predictions: {' | '.join(self.partial_word_predictions)}"
+            cv2.putText(frame, prediction_text, (20, 85), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+        
+        # Word confidence indicator
         if self.current_word:
-            suggestions = self.word_corrector.get_suggestions(self.current_word)
-            if suggestions:
-                suggestion_text = f"Suggestions: {' | '.join(suggestions[:3])}"
-                cv2.putText(frame, suggestion_text, (20, 85), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 1)
+            word_confidence = self.calculate_word_confidence()
+            confidence_text = f"Confidence: {word_confidence:.2f}"
+            confidence_color = (0, 255, 0) if word_confidence > 0.7 else (0, 165, 255) if word_confidence > 0.4 else (0, 0, 255)
+            cv2.putText(frame, confidence_text, (20, 115), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, confidence_color, 2)
         
-        # Recent words
+        # Recent words with better formatting
         if self.recognized_words:
-            recent_words = " | ".join(self.recognized_words[-3:])
-            cv2.putText(frame, f"Recent: {recent_words}", (20, 115), 
+            recent_words = " → ".join(self.recognized_words[-4:])
+            cv2.putText(frame, f"Recent: {recent_words}", (20, 145), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
-        # System status
-        status_text = []
+        # Enhanced system status
+        status_items = []
         if MEDIAPIPE_AVAILABLE:
-            status_text.append("MediaPipe: ✅")
+            status_items.append(("MediaPipe", "✅", (0, 255, 0)))
         else:
-            status_text.append("MediaPipe: ❌ (Fallback)")
+            status_items.append(("MediaPipe", "❌", (0, 0, 255)))
         
         if self.letter_recognizer.model_available:
-            status_text.append("Model: ✅")
+            status_items.append(("Model", "✅", (0, 255, 0)))
         else:
-            status_text.append("Model: ❌ (Demo)")
+            status_items.append(("Model", "❌", (0, 0, 255)))
         
         if TTS_AVAILABLE:
-            status_text.append("TTS: ✅")
+            status_items.append(("TTS", "✅", (0, 255, 0)))
         else:
-            status_text.append("TTS: ❌")
+            status_items.append(("TTS", "❌", (0, 0, 255)))
         
-        cv2.putText(frame, " | ".join(status_text), (20, 145), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+        # Draw status items
+        for i, (name, status, color) in enumerate(status_items):
+            x_pos = 20 + i * 120
+            cv2.putText(frame, f"{name}: {status}", (x_pos, 175), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
         
-        # Performance info
-        cv2.putText(frame, f"FPS: {self.fps}", (w - 150, 30), 
+        # Performance metrics
+        avg_processing_time = np.mean(self.processing_times) if self.processing_times else 0
+        cv2.putText(frame, f"FPS: {self.fps}", (w - 200, 30), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        cv2.putText(frame, f"Processing: {avg_processing_time:.1f}ms", (w - 200, 55), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(frame, f"Letters: {len(self.current_word)}", (w - 200, 80), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-        cv2.putText(frame, f"Letters: {len(self.current_word)}", (w - 150, 55), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-        cv2.putText(frame, f"Words: {len(self.recognized_words)}", (w - 150, 80), 
+        cv2.putText(frame, f"Words: {len(self.recognized_words)}", (w - 200, 105), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
         
-        # Instructions
+        # Path length indicator
+        if self.current_path:
+            path_length = len(self.current_path)
+            path_color = (0, 255, 0) if path_length >= self.MIN_PATH_LENGTH else (0, 165, 255)
+            cv2.putText(frame, f"Path: {path_length}", (w - 200, 130), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, path_color, 1)
+        
+        # Enhanced instructions
         instructions = [
-            "Hold index finger up and write letters in air",
-            "SPACE: End letter | S: Speak | C: Clear | ESC: Exit"
+            "✋ Hold index finger up and write letters in air",
+            "⌨️ SPACE: End letter | S: Speak | C: Clear | T: Toggle trail | ESC: Exit"
         ]
         
         for i, instruction in enumerate(instructions):
             cv2.putText(frame, instruction, (20, h - 60 + i * 25), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
         
-        # Target words panel
-        self.draw_target_words_panel(frame)
+        # Enhanced target words panel
+        self.draw_enhanced_target_words_panel(frame)
     
-    def draw_target_words_panel(self, frame):
-        """Draw target words panel"""
+    def draw_enhanced_target_words_panel(self, frame):
+        """Enhanced target words panel with predictions and matching"""
         h, w = frame.shape[:2]
         
-        # Panel
-        panel_x, panel_y = w - 320, 10
-        panel_w, panel_h = 300, 200
+        # Panel dimensions
+        panel_x, panel_y = w - 350, 10
+        panel_w, panel_h = 330, 250
         
+        # Draw panel background
         overlay = frame.copy()
         cv2.rectangle(overlay, (panel_x, panel_y), (panel_x + panel_w, panel_y + panel_h), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
+        cv2.addWeighted(overlay, 0.8, frame, 0.2, 0, frame)
         
         # Title
         cv2.putText(frame, "Target Words:", (panel_x + 10, panel_y + 25), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
-        # Show words in grid
-        words_to_show = self.word_corrector.target_words[:18]
+        # Show matching words first if current word exists
+        words_to_show = []
+        if self.current_word:
+            # Show words that match current input
+            matching_words = [word for word in self.word_corrector.target_words 
+                            if word.startswith(self.current_word)]
+            words_to_show.extend(matching_words[:12])
+            
+            # Fill remaining slots with other words
+            remaining_slots = 18 - len(words_to_show)
+            other_words = [word for word in self.word_corrector.target_words[:remaining_slots] 
+                          if word not in words_to_show]
+            words_to_show.extend(other_words)
+        else:
+            # Show first 18 words
+            words_to_show = self.word_corrector.target_words[:18]
+        
+        # Display words in grid
         cols, rows = 3, 6
         
         for i, word in enumerate(words_to_show):
+            if i >= 18:  # Limit display
+                break
+                
             row = i // cols
             col = i % cols
             
-            x = panel_x + 15 + col * 90
-            y = panel_y + 50 + row * 25
+            x = panel_x + 15 + col * 100
+            y = panel_y + 50 + row * 30
             
-            # Highlight current word
-            color = (0, 255, 0) if word == self.current_word else (200, 200, 200)
-            cv2.putText(frame, word, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+            # Determine color based on matching
+            if self.current_word and word.startswith(self.current_word):
+                if word == self.current_word:
+                    color = (0, 255, 0)  # Exact match - green
+                else:
+                    color = (0, 255, 255)  # Partial match - cyan
+            elif word in self.recognized_words[-3:]:
+                color = (255, 0, 255)  # Recently recognized - magenta
+            else:
+                color = (200, 200, 200)  # Default - light gray
+            
+            # Draw word with appropriate styling
+            font_scale = 0.5 if len(word) <= 3 else 0.4
+            thickness = 2 if color != (200, 200, 200) else 1
+            cv2.putText(frame, word, (x, y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
+        
+        # Show legend
+        legend_y = panel_y + panel_h - 60
+        cv2.putText(frame, "Legend:", (panel_x + 10, legend_y), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        legend_items = [
+            ("Current", (0, 255, 0)),
+            ("Match", (0, 255, 255)),
+            ("Recent", (255, 0, 255))
+        ]
+        
+        for i, (label, color) in enumerate(legend_items):
+            x_pos = panel_x + 10 + i * 80
+            cv2.putText(frame, label, (x_pos, legend_y + 20), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
     
     def process_letter_completion(self):
-        """Process completed letter"""
+        """Enhanced letter processing with multiple candidates and smoothing"""
         if len(self.current_path) < self.MIN_PATH_LENGTH:
             return
         
+        # Get letter recognition with confidence
         letter, confidence = self.letter_recognizer.recognize_letter(self.current_path)
         
         if letter and confidence > self.CONFIDENCE_THRESHOLD:
-            self.current_word += letter
-            print(f"Letter: {letter} (confidence: {confidence:.3f})")
+            # Store letter candidate
+            self.letter_candidates.append((letter, confidence, time.time()))
+            
+            # Apply letter smoothing if enabled
+            if self.letter_smoothing and len(self.letter_candidates) >= 2:
+                # Check consistency with recent letters
+                recent_letters = [l for l, c, t in self.letter_candidates[-3:]]
+                if recent_letters.count(letter) >= 2:  # Majority vote
+                    final_letter = letter
+                else:
+                    # Use highest confidence from recent candidates
+                    best_candidate = max(self.letter_candidates[-3:], key=lambda x: x[1])
+                    final_letter = best_candidate[0]
+            else:
+                final_letter = letter
+            
+            # Add letter to current word
+            self.current_word += final_letter
+            self.last_letter_time = time.time()
+            
+            # Update word predictions
+            self.update_word_predictions()
+            
+            print(f"Letter: {final_letter} (confidence: {confidence:.3f})")
+            
+            # Auto-complete word if high confidence match found
+            if self.auto_word_completion:
+                self.check_auto_completion()
         else:
             print(f"Letter rejected: {letter} (confidence: {confidence:.3f})")
         
-        # Clear path
+        # Clear path and reset counters
         self.current_path.clear()
         self.letter_pause_count = 0
     
     def process_word_completion(self):
-        """Process completed word"""
+        """Enhanced word completion with confidence scoring"""
         if not self.current_word:
             return
         
-        # Correct word
+        # Get word correction with confidence
         corrected_word = self.word_corrector.correct_word(self.current_word)
         
-        print(f"Word: {self.current_word} -> {corrected_word}")
+        # Calculate word confidence based on letter confidences
+        word_confidence = self.calculate_word_confidence()
+        self.word_confidence_history.append(word_confidence)
+        
+        print(f"Word: {self.current_word} -> {corrected_word} (confidence: {word_confidence:.3f})")
         
         # Add to recognized words
         self.recognized_words.append(corrected_word)
@@ -726,94 +984,200 @@ class CompleteAirWritingSystem:
         # Speak word in separate thread
         threading.Thread(target=self.tts.speak, args=(corrected_word,), daemon=True).start()
         
-        # Reset
+        # Reset state
+        self.reset_word_state()
+    
+    def update_word_predictions(self):
+        """Update real-time word predictions"""
+        if self.current_word:
+            suggestions = self.word_corrector.get_suggestions(self.current_word)
+            self.partial_word_predictions = suggestions[:3]  # Top 3 predictions
+    
+    def check_auto_completion(self):
+        """Check if word can be auto-completed with high confidence"""
+        if len(self.current_word) >= 2:
+            exact_matches = [word for word in self.word_corrector.target_words 
+                           if word.startswith(self.current_word)]
+            
+            # Auto-complete if only one exact match and word is 3+ letters
+            if len(exact_matches) == 1 and len(self.current_word) >= 3:
+                completed_word = exact_matches[0]
+                if len(completed_word) == len(self.current_word):
+                    # Word is already complete
+                    self.process_word_completion()
+    
+    def calculate_word_confidence(self):
+        """Calculate overall word confidence from letter candidates"""
+        if not self.letter_candidates:
+            return 0.0
+        
+        # Get recent letter confidences
+        recent_confidences = [c for l, c, t in self.letter_candidates[-len(self.current_word):]]
+        
+        if recent_confidences:
+            return sum(recent_confidences) / len(recent_confidences)
+        return 0.0
+    
+    def reset_word_state(self):
+        """Reset all word-related state"""
         self.current_word = ""
         self.word_pause_count = 0
         self.current_path.clear()
+        self.letter_candidates.clear()
+        self.partial_word_predictions.clear()
     
     def run(self):
-        """Main application loop"""
+        """Optimized main application loop for real-time performance"""
         print("🚀 Starting Complete Air Writing System...")
         
+        # Performance optimization variables
+        frame_skip_counter = 0
+        process_every_n_frames = 1  # Process every frame for maximum responsiveness
+        
         while True:
+            frame_start_time = time.time()
+            
             ret, frame = self.cap.read()
             if not ret:
                 print("❌ Failed to read from camera")
                 break
             
-            # Flip frame
+            # Flip frame horizontally for mirror effect
             frame = cv2.flip(frame, 1)
             
-            # Process hand tracking
-            fingertip, velocity, is_writing = self.hand_tracker.process_frame(frame)
+            # Skip processing for performance if needed
+            frame_skip_counter += 1
+            if frame_skip_counter % process_every_n_frames != 0:
+                cv2.imshow("Complete Air Writing System", frame)
+                if cv2.waitKey(1) & 0xFF == 27:  # ESC
+                    break
+                continue
             
-            # Update FPS
+            # Process hand tracking with timing
+            processing_start = time.time()
+            fingertip, velocity, is_writing = self.hand_tracker.process_frame(frame)
+            processing_time = (time.time() - processing_start) * 1000  # Convert to ms
+            self.processing_times.append(processing_time)
+            
+            # Update FPS counter
             self.update_fps()
             
-            # Handle writing logic
+            # Enhanced writing logic with better state management
+            current_time = time.time()
+            
             if fingertip and is_writing:
+                # Active writing detected
                 self.current_path.append(fingertip)
-                self.last_movement_time = time.time()
+                
+                # Prevent path from becoming too long (memory optimization)
+                if len(self.current_path) > self.MAX_PATH_LENGTH:
+                    self.current_path = self.current_path[-self.MAX_PATH_LENGTH//2:]
+                
+                self.last_movement_time = current_time
                 self.letter_pause_count = 0
                 self.word_pause_count = 0
+                
             else:
-                # No active writing
+                # No active writing - handle pauses and completions
                 if len(self.current_path) > 0:
                     self.letter_pause_count += 1
                 
-                # Letter completion
-                if self.letter_pause_count >= self.LETTER_PAUSE_FRAMES:
+                # Letter completion with improved timing
+                if (self.letter_pause_count >= self.LETTER_PAUSE_FRAMES or 
+                    (len(self.current_path) >= self.MIN_PATH_LENGTH and 
+                     current_time - self.last_movement_time > 1.0)):
                     self.process_letter_completion()
                 
-                # Word completion
-                if time.time() - self.last_movement_time > 3.0:
+                # Word completion with multiple triggers
+                time_since_last_movement = current_time - self.last_movement_time
+                time_since_last_letter = current_time - self.last_letter_time
+                
+                if (time_since_last_movement > 2.5 or 
+                    (self.current_word and time_since_last_letter > 4.0)):
                     self.word_pause_count += 1
                     
-                    if self.word_pause_count >= self.WORD_PAUSE_FRAMES:
+                    if (self.word_pause_count >= self.WORD_PAUSE_FRAMES or
+                        time_since_last_movement > 5.0):
                         self.process_word_completion()
             
-            # Draw UI
+            # Draw enhanced UI
             self.draw_ui(frame)
             
-            # Show frame
+            # Show frame with window management
             cv2.imshow("Complete Air Writing System", frame)
             
-            # Handle keyboard input
+            # Enhanced keyboard input handling
             key = cv2.waitKey(1) & 0xFF
             
-            if key == ord(' '):  # End letter
+            if key == ord(' '):  # Manual letter completion
                 self.process_letter_completion()
             
-            elif key == ord('s'):  # Speak word
+            elif key == ord('s'):  # Speak current word
                 if self.current_word:
                     corrected_word = self.word_corrector.correct_word(self.current_word)
                     self.recognized_words.append(corrected_word)
                     threading.Thread(target=self.tts.speak, args=(corrected_word,), daemon=True).start()
-                    self.current_word = ""
-                    self.current_path.clear()
+                    self.reset_word_state()
+                    print(f"Spoken: {corrected_word}")
             
-            elif key == ord('c'):  # Clear
-                self.current_word = ""
-                self.current_path.clear()
+            elif key == ord('c'):  # Clear current word
+                self.reset_word_state()
                 self.hand_tracker.clear_trail()
-                print("Cleared")
+                print("🧹 Cleared current word")
             
-            elif key == ord('t'):  # Toggle trail
-                # Toggle trail visibility (implementation depends on tracker)
-                print("Trail toggled")
+            elif key == ord('t'):  # Toggle trail visibility
+                self.show_trail = not self.show_trail
+                print(f"🎨 Trail {'enabled' if self.show_trail else 'disabled'}")
             
-            elif key == 27:  # ESC
+            elif key == ord('d'):  # Toggle debug info
+                self.show_debug = not self.show_debug
+                print(f"🐛 Debug info {'enabled' if self.show_debug else 'disabled'}")
+            
+            elif key == ord('a'):  # Toggle auto-completion
+                self.auto_word_completion = not self.auto_word_completion
+                print(f"🤖 Auto-completion {'enabled' if self.auto_word_completion else 'disabled'}")
+            
+            elif key == ord('r'):  # Reset session
+                self.recognized_words.clear()
+                self.reset_word_state()
+                self.hand_tracker.clear_trail()
+                print("🔄 Session reset")
+            
+            elif key == 27:  # ESC - Exit
                 break
+            
+            # Performance monitoring
+            frame_time = (time.time() - frame_start_time) * 1000
+            if frame_time > 50:  # If frame takes more than 50ms, consider frame skipping
+                process_every_n_frames = min(3, process_every_n_frames + 1)
+            elif frame_time < 20:  # If frame is fast, process every frame
+                process_every_n_frames = max(1, process_every_n_frames - 1)
         
-        # Cleanup
+        # Cleanup and session summary
+        self.cleanup_and_summarize()
+    
+    def cleanup_and_summarize(self):
+        """Cleanup resources and show session summary"""
         self.cap.release()
         cv2.destroyAllWindows()
         
-        # Session summary
-        print(f"\n📊 Session Summary:")
+        # Detailed session summary
+        print(f"\n📊 SESSION SUMMARY")
+        print("=" * 50)
         print(f"   Words recognized: {len(self.recognized_words)}")
         if self.recognized_words:
-            print(f"   Words: {', '.join(self.recognized_words)}")
+            print(f"   Words: {' → '.join(self.recognized_words)}")
+        
+        if self.word_confidence_history:
+            avg_confidence = np.mean(self.word_confidence_history)
+            print(f"   Average confidence: {avg_confidence:.3f}")
+        
+        if self.processing_times:
+            avg_processing = np.mean(self.processing_times)
+            print(f"   Average processing time: {avg_processing:.1f}ms")
+        
+        print(f"   Average FPS: {self.fps}")
+        print("=" * 50)
         print("👋 Complete Air Writing System finished!")
 
 def parse_args():
