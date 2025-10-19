@@ -338,66 +338,11 @@ class LetterRecognizer:
 
         print("⚠️  No trained model found - using demo mode")
     
-    def draw_path_on_blank(self, path, img_size=256):
-        """Create image from path with improved preprocessing"""
-        if len(path) < 2:
-            return np.ones((img_size, img_size), dtype=np.uint8) * 255
-
-        blank = np.ones((img_size, img_size), dtype=np.uint8) * 255
-
-        # Convert to numpy array
-        path_array = np.array(path, dtype=np.float32)
-
-        # Remove duplicate points and smooth path
-        if len(path_array) > 2:
-            # Remove points that are too close (reduce noise)
-            distances = np.sqrt(np.sum(np.diff(path_array, axis=0)**2, axis=1))
-            keep_indices = np.concatenate([[0], np.where(distances > 2)[0] + 1])
-            path_array = path_array[keep_indices]
-
-        if len(path_array) < 2:
-            return blank
-
-        # Normalize path to fit in image with better centering
-        min_x, min_y = np.min(path_array, axis=0)
-        max_x, max_y = np.max(path_array, axis=0)
-        width = max_x - min_x
-        height = max_y - min_y
-
-        # Add padding and ensure square aspect ratio
-        padding = 30
-        center_x = (min_x + max_x) / 2
-        center_y = (min_y + max_y) / 2
-
-        # Calculate scale to fit in padded area
-        max_dim = max(width, height)
-        if max_dim > 0:
-            scale = (img_size - 2 * padding) / max_dim
-        else:
-            scale = 1.0
-
-        # Center the path in the image
-        offset_x = img_size / 2 - center_x * scale
-        offset_y = img_size / 2 - center_y * scale
-
-        # Draw smoothed path with variable thickness
-        for i in range(1, len(path_array)):
-            x1 = int(path_array[i-1][0] * scale + offset_x)
-            y1 = int(path_array[i-1][1] * scale + offset_y)
-            x2 = int(path_array[i][0] * scale + offset_x)
-            y2 = int(path_array[i][1] * scale + offset_y)
-
-            # Ensure coordinates are within bounds
-            x1 = np.clip(x1, 0, img_size-1)
-            y1 = np.clip(y1, 0, img_size-1)
-            x2 = np.clip(x2, 0, img_size-1)
-            y2 = np.clip(y2, 0, img_size-1)
-
-            # Variable thickness based on stroke order
-            thickness = max(2, int(6 * (i / len(path_array))))
-            cv2.line(blank, (x1, y1), (x2, y2), (0), thickness)
-
-        return blank
+    def draw_path_on_blank(self, path, img_size=32):
+        """Optimized path drawing using enhanced preprocessing"""
+        # Use the optimized preprocessing from utils
+        from utils.preprocessing import draw_path_on_blank
+        return draw_path_on_blank(path, img_size)
     
     def recognize_letter(self, path):
         """Recognize letter from path"""
