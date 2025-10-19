@@ -4,24 +4,24 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.utils import to_categorical
 
-# Load ASL Alphabet dataset from tensorflow_datasets
+# Load EMNIST Letters dataset from tensorflow_datasets
 (ds_train, ds_test), ds_info = tfds.load(
-    'asl_alphabet',
+    'emnist/letters',
     split=['train', 'test'],
     shuffle_files=True,
     as_supervised=True,
     with_info=True,
 )
 
-NUM_CLASSES = ds_info.features['label'].num_classes
+NUM_CLASSES = 26  # A-Z
 
-IMG_SIZE = 64
+IMG_SIZE = 28
 
 def preprocess(image, label):
     image = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
-    image = tf.image.rgb_to_grayscale(image)
     image = tf.cast(image, tf.float32) / 255.0
-    label = tf.one_hot(label, NUM_CLASSES)
+    # EMNIST labels are 1-26, subtract 1 for 0-25
+    label = tf.one_hot(label - 1, NUM_CLASSES)
     return image, label
 
 BATCH_SIZE = 32
