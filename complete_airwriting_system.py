@@ -663,17 +663,14 @@ class TextToSpeech:
         else:
             print(f"🔊 Would speak: {text}")
 
-class CompleteAirWritingSystem:
-    """Complete integrated air writing system optimized for real-time performance"""
+class HandTrackingOnlySystem:
+    """MediaPipe-based hand tracking system focused on movement detection"""
     
-    def __init__(self, model_path=None):
-        print("🚀 Initializing Complete Air Writing System...")
+    def __init__(self):
+        print("🚀 Initializing MediaPipe Hand Tracking System...")
         
-        # Initialize components
+        # Initialize hand tracker only
         self.hand_tracker = UniversalHandTracker()
-        self.letter_recognizer = LetterRecognizer(model_path)
-        self.word_corrector = WordCorrector()
-        self.tts = TextToSpeech()
         
         # Initialize camera with optimized settings
         self.cap = cv2.VideoCapture(0)
@@ -686,24 +683,12 @@ class CompleteAirWritingSystem:
         self.cap.set(cv2.CAP_PROP_FPS, 30)
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce buffer for real-time
         
-        # Application state
-        self.current_word = ""
-        self.recognized_words = []
+        # Application state - simplified for tracking only
         self.current_path = []
-        self.letter_candidates = []  # Store multiple letter candidates
+        self.MAX_PATH_LENGTH = 500    # Allow longer paths for drawing
         
-        # Enhanced timing parameters for better accuracy
-        self.LETTER_PAUSE_FRAMES = 20  # Reduced for faster response
-        self.WORD_PAUSE_FRAMES = 60   # Reduced for faster word completion
-        self.MIN_PATH_LENGTH = 8      # Reduced minimum path length
-        self.CONFIDENCE_THRESHOLD = 0.25  # Lowered for better detection
-        self.MAX_PATH_LENGTH = 300    # Prevent memory issues
-        
-        # State counters
-        self.letter_pause_count = 0
-        self.word_pause_count = 0
+        # State tracking
         self.last_movement_time = time.time()
-        self.last_letter_time = time.time()
         
         # Performance tracking
         self.fps = 0
@@ -711,37 +696,29 @@ class CompleteAirWritingSystem:
         self.fps_start_time = time.time()
         self.processing_times = deque(maxlen=30)
         
-        # Real-time optimization flags
+        # Display options
         self.show_trail = True
         self.show_debug = True
-        self.auto_word_completion = True
-        self.letter_smoothing = True
+        self.show_landmarks = True
         
-        # Enhanced word prediction
-        self.partial_word_predictions = []
-        self.word_confidence_history = deque(maxlen=5)
-        
-        print("✅ Complete Air Writing System initialized with real-time optimizations")
+        print("✅ MediaPipe Hand Tracking System initialized")
         self.print_instructions()
     
     def print_instructions(self):
         """Print usage instructions"""
         print("\n" + "="*60)
-        print("🖐️  COMPLETE AIR WRITING SYSTEM")
+        print("🖐️  MEDIAPIPE HAND TRACKING SYSTEM")
         print("="*60)
         print("📋 Instructions:")
-        print("   • Hold up your index finger (other fingers curled)")
-        print("   • Write letters in the air")
-        print("   • Pause briefly between letters")
-        print("   • Pause longer between words")
-        print("\n🎯 Try these simple words:")
-        sample_words = ['CAT', 'DOG', 'SUN', 'BOX', 'RED', 'BIG', 'TOP', 'CUP']
-        print("   " + " | ".join(sample_words))
+        print("   • Hold your hand in front of the camera")
+        print("   • Move your index finger to draw in the air")
+        print("   • Green trail shows your movement path")
+        print("   • Red dot shows fingertip position")
         print("\n⌨️  Controls:")
-        print("   SPACE - End current letter")
-        print("   S     - Speak current word")
-        print("   C     - Clear current word")
-        print("   T     - Toggle trail")
+        print("   T     - Toggle trail display")
+        print("   L     - Toggle landmarks display")
+        print("   C     - Clear trail")
+        print("   D     - Toggle debug info")
         print("   ESC   - Exit")
         print("="*60 + "\n")
     
