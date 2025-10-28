@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.egg-info/
+dist/
+build/
+eggs/
+
+# Virtual environments
+airwriting-env/
+env/
+venv/
+
+# Logs
+output_log.txt
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models and large files (if applicable)
+models/*.h5
+models/*.pkl
