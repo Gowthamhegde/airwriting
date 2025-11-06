@@ -1,0 +1,7 @@
+# Real-Time Air Writing System Requirements
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+numpy>=1.21.0
+pyttsx3>=2.90
+textblob>=0.17.1
+scikit-learn>=1.1.0
