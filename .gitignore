@@ -14,19 +14,47 @@ eggs/
 airwriting-env/
 env/
 venv/
+.env
+.venv
 
-# Logs
+# Logs and output files
 output_log.txt
 *.log
+session_data.json
 
-# IDE
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Models and large files (if applicable)
+# Models and large files
 models/*.h5
 models/*.pkl
+*.pkl
+*.h5
+*.model
+*.weights
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Large binary files
+*.pyd
+*.dll
+*.so
+*.dylib
+
+# Data files
+data/
+datasets/
+*.csv
+*.json.bak
