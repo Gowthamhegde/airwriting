@@ -1,0 +1,19 @@
+# Complete Real-Time Air Writing System Requirements
+# Core computer vision and hand tracking
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+
+# Numerical computing
+numpy>=1.21.0
+
+# Machine learning
+scikit-learn>=1.1.0
+
+# Text processing and auto-correction
+textblob>=0.17.1
+
+# Text-to-speech
+pyttsx3>=2.90
+
+# Additional utilities
+nltk>=3.7
